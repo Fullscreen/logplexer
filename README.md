@@ -9,8 +9,13 @@ By default in a Rails app, it is set to log to standard out in `development` and
 Add this line to your application's Gemfile:
 
 ```ruby
-gem 'logplexer', github: "Fullscreen/logplexer"
+gem 'logplexer'
 ```
+
+or
+
+
+    $ gem install logplexer
 
 And then execute:
 
