@@ -59,7 +59,7 @@ describe Logplexer do
   it 'should turn a string into a hash for HB' do
     exception = { error_class: "Exception",
                   error_message: "Oh hai" }
-    Honeybadger.should_receive(:notify).with( exception, {} )
+    expect(Honeybadger).to receive(:notify).with( exception, {} )
     Logplexer.error("Oh hai")
   end
 
