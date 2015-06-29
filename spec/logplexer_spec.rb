@@ -1,6 +1,14 @@
 require 'spec_helper'
 
 describe Logplexer do
+  before do
+    allow_any_instance_of( Logger ).to receive(:debug).and_return(true)
+    allow_any_instance_of( Logger ).to receive(:info).and_return(true)
+    allow_any_instance_of( Logger ).to receive(:warn).and_return(true)
+    allow_any_instance_of( Logger ).to receive(:error).and_return(true)
+    allow_any_instance_of( Logger ).to receive(:fatal).and_return(true)
+  end
+
   it 'has a version number' do
     expect(Logplexer::VERSION).not_to be nil
   end
@@ -14,29 +22,29 @@ describe Logplexer do
   end
 
   it 'should log to STDOUT' do
-    Logger.any_instance.should_receive(:error).with("WAT")
+    expect_any_instance_of(Logger).to receive(:error).with("WAT")
     Logplexer.error("WAT")
   end
 
   it 'should handle hashes as exceptions' do
     h = {a: "hello", b: "world"}
-    Logger.any_instance.should_receive(:info).with(h.inspect)
+    expect_any_instance_of(Logger).to receive(:info).with(h.inspect)
     Logplexer.info(h)
   end
 
   it 'should handle backtrace on verbose' do
     ex = Exception.new("Much error, many wrongs")
     allow(ex).to receive(:backtrace).and_return(["stackity"])
-    Logger.any_instance.should_receive(:warn).with("Much error, many wrongs")
-    Logger.any_instance.should_receive(:warn).with("> stackity")
+    expect_any_instance_of(Logger).to receive(:warn).with("Much error, many wrongs")
+    expect_any_instance_of(Logger).to receive(:warn).with("> stackity")
     Logplexer.warn( ex, { verbose: true })
   end
 
   it 'should handle verbosity set on environment' do
     ex = Exception.new("Much error, many wrongs")
     allow(ex).to receive(:backtrace).and_return(["stackity"])
-    Logger.any_instance.should_receive(:warn).with("Much error, many wrongs")
-    Logger.any_instance.should_receive(:warn).with("> stackity")
+    expect_any_instance_of(Logger).to receive(:warn).with("Much error, many wrongs")
+    expect_any_instance_of(Logger).to receive(:warn).with("> stackity")
     ENV['LOG_VERBOSE'] = 'true'
     Logplexer.warn( ex )
   end
@@ -52,6 +60,23 @@ describe Logplexer do
     exception = { error_class: "Exception",
                   error_message: "Oh hai" }
     Honeybadger.should_receive(:notify).with( exception, {} )
-    Logplexer.info("Oh hai")
+    Logplexer.error("Oh hai")
   end
+
+  it 'should only log to HB if LOG_MIN_HB is gte a set value' do
+    ENV['LOG_TO_HB'] = 'true'
+    ENV['LOG_MIN_HB'] = 'info'
+    VCR.use_cassette('honeybadger') do
+      reg = /[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}/
+      expect { Logplexer.info('the error').to match( reg ) }
+    end
+  end
+
+  it 'should not log any errors if LOG_QUIET is true' do
+    ENV['LOG_QUIET'] = 'true'
+    expect_any_instance_of( Logger ).not_to receive(:error).with('do you even logplex bro?')
+    Logplexer.error('do you even logplex bro?')
+  end
+
+
 end
