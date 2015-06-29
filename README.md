@@ -92,6 +92,11 @@ Or if you are in developmet and would like to have all instances of Logplexer be
 
 and everything that isn't specifically marked as `verbose: false` will print the backtrace. Keep in mind that verbose only works when the input is an Exception type.
 
+
+Likewise, if you are in development or test and would like to quiet all logs ( i.e. don't report any Logplexer errors ), just set `LOG_QUIET` to 'true':
+
+    ENV['LOG_QUIET'] = "true"
+
 ## Configuration
 
 If your `RAILS_ENV` is set to `development` or `test`, Logplexer will set an environment variable called `LOG_TO_HB` as "false" if it is anything else, i.e. `production` or `staging`, `LOG_TO_HB` will be set to "true".
@@ -104,6 +109,12 @@ or
 
     ENV['LOG_TO_HB'] = "false"
 
+### Overriding log level
+
+By default Logplexer will (as of version 0.2.0) log to Honeybadger only those errors with the log level of `error` or `fatal`. If you would like to adjust this, for example to log errors that are at or above  `warn` for instance, just put this line in your: `config/initializers/logplexer.rb`:
+
+    ENV['LOG_MIN_HB'] = 'warn' # could also be debug, info, error or fatal
+
 ## Development
 
 After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake rspec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
@@ -112,7 +123,7 @@ To install this gem onto your local machine, run `bundle exec rake install`. To 
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/logplexer.
+Bug reports and pull requests are welcome on GitHub at https://github.com/Fullscreen/logplexer.
 
 
 ## License
