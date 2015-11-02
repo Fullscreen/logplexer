@@ -47,7 +47,7 @@ Inputs can be any type, `Exception`, `String`, `Hash`, etc.
 If you are in development and would like to log to a logfile, just specify a logfile in the opts argument like so:
 
 ```ruby
-> Logplexer.info( "Oh hai!", { logfile: '/Users/ryanc/Desktop/log.txt'} )
+> Logplexer.info( "Oh hai!", logfile: '/Users/ryanc/Desktop/log.txt' )
  => true
 ```
 
@@ -57,6 +57,14 @@ cat ~/Desktop/log.txt
 I, [2015-06-20T15:49:16.040351 #23538]  INFO -- : Oh hai!
 ```
 
+If you're using Rails, you can also specify the logger to be the Rails logger. In fact you can specify any class as the logger
+so long as the instance responds to all the message types: `debug`, `info`, `warn`, `error`, and `fatal` which all instances of
+`Logger` will.
+
+```ruby
+> Logplexer.error( "Log to Rails not STDOUT", logger: Rails.logger )
+```
+
 If you would like to see the whole backtrace, just set `verbose` to true like so:
 
 ```ruby
@@ -64,7 +72,7 @@ def method1
   begin
     raise "Holy errors Batman"
   rescue => e
-    Logplexer.error( e, { verbose: true} )
+    Logplexer.error( e, verbose: true )
   end
 end
 

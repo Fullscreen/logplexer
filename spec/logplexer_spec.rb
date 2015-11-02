@@ -70,13 +70,42 @@ describe Logplexer do
       reg = /[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}/
       expect { Logplexer.info('the error').to match( reg ) }
     end
+    ENV['LOG_TO_HB'] = nil
+    ENV['LOG_MIN_HB'] = nil
   end
 
   it 'should not log any errors if LOG_QUIET is true' do
     ENV['LOG_QUIET'] = 'true'
     expect_any_instance_of( Logger ).not_to receive(:error).with('do you even logplex bro?')
     Logplexer.error('do you even logplex bro?')
+    ENV['LOG_QUIET'] = nil
   end
 
+  it 'should handle named args as well as hash' do
+    expect(Logplexer).to receive(:log).with("Yo", "warn", { verbose: true })
+    Logplexer.warn("Yo", verbose: true )
+  end
 
+  # TODO: Get this spec working. Tested out in console/ working fine
+  # it 'should log to a file' do
+  #   msg = "This one time at band camp..."
+  #   Logplexer.info(msg, logfile: "blah.log")
+  #   expect(Logger).to receive(:new)
+  # end
+
+  it 'should be able to pass in a custom logger' do
+    railslogger = Logger.new(STDOUT)
+    expect(Logplexer).to receive(:log).with("some message", "error", {logger: railslogger})
+    Logplexer.error("some message", logger: railslogger)
+  end
+
+  it 'should raise an error if the custom logger doesnt respond to all methods' do
+    badlogger = Hash.new # doesnt respond to :error, :info, etc
+    begin
+      Logplexer.error("some message", logger: badlogger)
+      raise "Allowed Logger to be called with a bad logger"
+    rescue => e
+      expect(e.message).to eq("If specified, logger must be able to respond to :debug, :info, :warn, :error, and :fatal")
+    end
+  end
 end

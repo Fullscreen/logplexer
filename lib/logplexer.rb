@@ -2,6 +2,9 @@ require "logplexer/version"
 require "honeybadger"
 require 'logplexer/railtie' if defined?(Rails)
 require 'logger'
+class LogplexerError < StandardError
+end
+
 module Logplexer
 
   extend self
@@ -9,21 +12,26 @@ module Logplexer
   # Dyamically create all the class log methods for Rails logger
   %W(debug info warn error fatal).each do |log_type|
     class_eval  <<-RUBY
-      def #{log_type}(exception, opts = {})
+      def #{log_type}(exception, **opts)
         log( exception, "#{log_type}", opts )
       end
     RUBY
   end
 
-  def log( exception, log_level, opts = {})
+  def log( exception, log_level, **opts)
     # We wrap the Honeybadger notify call so that in development,
     # we actually see the errors. Then we can unwrap the REST errors
     # if need be
+
     return if exception.nil?
     return if ENV['LOG_QUIET'] == 'true'
 
     logfile = opts.delete( :logfile )
-    logger = Logger.new( logfile || STDOUT )
+    logger = opts.delete( :logger ) || Logger.new( logfile || STDOUT )
+    unless is_logger?(logger)
+      puts "Not a logger"
+      raise LogplexerError, "If specified, logger must be able to respond to :debug, :info, :warn, :error, and :fatal"
+    end
 
     # Override the verbosity if LOG_VERBOSE is unset
     verbose = ENV["LOG_VERBOSE"] == "true" ? true : opts.delete( :verbose )
@@ -56,6 +64,11 @@ module Logplexer
     end
   end
 
+  def is_logger?(logger)
+    eval( %w(debug info warn error fatal).map do |meth|
+      "logger.respond_to?(:#{meth})"
+    end.join( ' && ' ) )
+  end
   def above_min_log_level?( p )
     min = ENV["LOG_MIN_HB"] || 'error'
     return priority( p ) >= priority( min )
