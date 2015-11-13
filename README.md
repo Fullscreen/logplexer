@@ -94,38 +94,34 @@ E, [2015-06-21T16:04:59.248024 #25737] ERROR -- : > /Users/ryanc/Workspace/test_
 E, [2015-06-21T16:04:59.248041 #25737] ERROR -- : > /Users/ryanc/Workspace/test_logplexer/config/initializers/logplexer.rb:17:in `method3'
 ```
 
-Or if you are in developmet and would like to have all instances of Logplexer be verbose, just set the environment variable `LOG_VERBOSE` to "true" like so:
-
-    ENV["LOG_VERBOSE"] = "true"
-
-and everything that isn't specifically marked as `verbose: false` will print the backtrace. Keep in mind that verbose only works when the input is an Exception type.
-
-
-Likewise, if you are in development or test and would like to quiet all logs ( i.e. don't report any Logplexer errors ), just set `LOG_QUIET` to 'true':
-
-    ENV['LOG_QUIET'] = "true"
-
 ## Configuration
 
-If your `RAILS_ENV` is set to `development` or `test`, Logplexer will set an environment variable called `LOG_TO_HB` as "false" if it is anything else, i.e. `production` or `staging`, `LOG_TO_HB` will be set to "true".
+In most cases specifying logfile, logger, etc at the time of the logger call is fine, but I know there are many who need to fine tune their Logplexing capabilities. Logplexer exposes an array of configuration options that you can add to your `config/initializers/logplexer.rb` file.
 
-Overriding this behavior is as easy as adding an initializer with the line:
+A basic example of a logplexer initializer:
 
-    ENV['LOG_TO_HB'] = "true"
+```ruby
+Logplexer.configure do |config|
+  # config.logfile = "my_sexy_log.log" # STDOUT by default, but if you set logger, this will be ignored.
+  config.logger = Rails.logger # Logger.new(STDOUT) by default
+  config.verbose = Rails.env == "development" # logs the backtrace as well
+  # quiet = false # if true, nothing will log (helpful for tests)
+  config.honeybadger = false # This tells Logplexer whether or not to log to Honeybadger
+  config.min_log_level = :warn # :error by default. Can be ( :debug, :info, :warn, :error, or :fatal )
+end
+```
 
-or
+The default initializer is as follows:
 
-    ENV['LOG_TO_HB'] = "false"
-
-### Overriding log level
-
-By default Logplexer will (as of version 0.2.0) log to Honeybadger only those errors with the log level of `error` or `fatal`. If you would like to adjust this, for example to log errors that are at or above  `warn` for instance, just put this line in your: `config/initializers/logplexer.rb`:
-
-    ENV['LOG_MIN_HB'] = 'warn' # could also be debug, info, error or fatal
+```ruby
+Logplexer.configure do |config|
+  config.honeybadger = !(Rails.env == 'development' or Rails.env == 'test')
+end
+```
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake rspec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+After checking out the repo, run `bin/setup` to install dependencies. Then, run `rspec spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
 
 To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
 

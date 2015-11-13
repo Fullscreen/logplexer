@@ -45,11 +45,11 @@ describe Logplexer do
     allow(ex).to receive(:backtrace).and_return(["stackity"])
     expect_any_instance_of(Logger).to receive(:warn).with("Much error, many wrongs")
     expect_any_instance_of(Logger).to receive(:warn).with("> stackity")
-    ENV['LOG_VERBOSE'] = 'true'
+    Logplexer.config.verbose = true
     Logplexer.warn( ex )
   end
   it 'should log to Honeybadger' do
-    ENV['LOG_TO_HB'] = 'true'
+    Logplexer.config.honeybadger = true
     VCR.use_cassette('honeybadger') do
       reg = /[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}/
       expect { Logplexer.error('the error').to match( reg ) }
@@ -64,21 +64,19 @@ describe Logplexer do
   end
 
   it 'should only log to HB if LOG_MIN_HB is gte a set value' do
-    ENV['LOG_TO_HB'] = 'true'
-    ENV['LOG_MIN_HB'] = 'info'
+    Logplexer.configure { |c| c.honeybadger = true; c.min_log_level = :info}
     VCR.use_cassette('honeybadger') do
       reg = /[a-z0-9]{8}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{4}-[a-z0-9]{12}/
       expect { Logplexer.info('the error').to match( reg ) }
     end
-    ENV['LOG_TO_HB'] = nil
-    ENV['LOG_MIN_HB'] = nil
+    Logplexer.config = Logplexer::Configuration.new
   end
 
   it 'should not log any errors if LOG_QUIET is true' do
-    ENV['LOG_QUIET'] = 'true'
+    Logplexer.config.quiet = true
     expect_any_instance_of( Logger ).not_to receive(:error).with('do you even logplex bro?')
     Logplexer.error('do you even logplex bro?')
-    ENV['LOG_QUIET'] = nil
+    Logplexer.config.quiet = false
   end
 
   it 'should handle named args as well as hash' do

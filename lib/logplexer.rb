@@ -2,13 +2,20 @@ require "logplexer/version"
 require "honeybadger"
 require 'logplexer/railtie' if defined?(Rails)
 require 'logger'
+require 'logplexer/configuration'
 class LogplexerError < StandardError
 end
 
 module Logplexer
-
   extend self
+  attr_writer :config
+  def config
+    @config ||= Configuration.new
+  end
 
+  def configure(&blk)
+    yield( config )
+  end
   # Dyamically create all the class log methods for Rails logger
   %W(debug info warn error fatal).each do |log_type|
     class_eval  <<-RUBY
@@ -24,19 +31,21 @@ module Logplexer
     # if need be
 
     return if exception.nil?
-    return if ENV['LOG_QUIET'] == 'true'
+    return if Logplexer.config.quiet?
 
-    logfile = opts.delete( :logfile )
-    logger = opts.delete( :logger ) || Logger.new( logfile || STDOUT )
+    # If the user specifies a logfile AND a logger in the call, the logger will win out
+    logfile = opts.delete( :logfile ) || Logplexer.config.logfile
+    logger = opts.delete( :logger ) || Logplexer.config.logger
     unless is_logger?(logger)
-      puts "Not a logger"
       raise LogplexerError, "If specified, logger must be able to respond to :debug, :info, :warn, :error, and :fatal"
     end
 
-    # Override the verbosity if LOG_VERBOSE is unset
-    verbose = ENV["LOG_VERBOSE"] == "true" ? true : opts.delete( :verbose )
-    if ENV['LOG_TO_HB'] == "true" && above_min_log_level?( log_level )
-      #TODO: Maybe extend this to include other kinds of notifiers.
+    # Override the verbosity if config.verbose is unset
+    verbose = opts.delete( :verbose )
+    verbose = verbose.nil? ? Logplexer.config.verbose? : verbose
+
+    if Logplexer.config.honeybadger? && above_min_log_level?( log_level )
+
       if exception.is_a? String
         exception = { error_class: "Exception",
                       error_message: exception }
@@ -70,7 +79,7 @@ module Logplexer
     end.join( ' && ' ) )
   end
   def above_min_log_level?( p )
-    min = ENV["LOG_MIN_HB"] || 'error'
+    min = Logplexer.config.min_log_level || :error
     return priority( p ) >= priority( min )
   end
 
